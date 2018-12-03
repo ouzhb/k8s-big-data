@@ -1,0 +1,44 @@
+# A headless service to create DNS records.
+apiVersion: v1
+kind: Service
+metadata:
+  name: hdfs-journalnode
+  namespace: {{ $.Values.global.namespace }}
+  labels:
+    app: hdfs-journalnode
+  annotations:
+    # TODO: Deprecated. Replace tolerate-unready-endpoints with
+    # v1.Service.PublishNotReadyAddresses.
+    service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
+spec:
+  ports:
+  - port: 8485
+    name: jn
+  - port: 8480
+    name: http
+  clusterIP: None
+  selector:
+    app: hdfs-journalnode
+    
+---
+# A headless service to create DNS records.
+apiVersion: v1
+kind: Service
+metadata:
+  name: hdfs-namenode
+  namespace: {{ $.Values.global.namespace }}
+  labels:
+    app: hdfs-namenode
+  annotations:
+    # TODO: Deprecated. Replace tolerate-unready-endpoints with
+    # v1.Service.PublishNotReadyAddresses.
+    service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
+spec:
+  ports:
+  - port: 8020
+    name: fs
+  - port: 50070
+    name: http
+  clusterIP: None
+  selector:
+    app: hdfs-namenode

@@ -1,0 +1,27 @@
+global:
+  namespace: assurance
+  image:
+    repository: harbor.mig.ruijie.net/rgibns-snapshot
+    pullPolicy: IfNotPresent
+  single: false
+
+  cluster:
+    IP1: 172.24.33.23
+    IP2: 172.24.33.24
+    IP3: 172.24.33.25
+    HOST1: rgibns1
+    HOST2: rgibns2
+    HOST3: rgibns3
+
+#nnres:
+#  requests:
+#    cpu: 500m
+#    memory: 1536Mi
+#jnres:
+#  requests:
+#    cpu: 500m
+#    memory: 1536Mi
+#dnres:
+#  requests:
+#    cpu: 500m
+#    memory: 1536Mi

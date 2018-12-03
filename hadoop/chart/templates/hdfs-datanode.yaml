@@ -1,0 +1,67 @@
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  name: hdfs-datanode
+  namespace: {{ $.Values.global.namespace }}
+spec:
+  template:
+    metadata:
+      labels:
+        app: hdfs-datanode
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                - key: hdfs-datanode-exclude
+                  operator: DoesNotExist
+      hostNetwork: true
+      hostPID: true #使用主机PID
+      dnsPolicy: ClusterFirstWithHostNet # 使用主机网络，并且其他容器能够使用DNS解析Pod的域名
+      containers:
+        - name: datanode
+          image: {{ $.Values.global.image.repository }}/{{ $.Chart.Name }}:{{ $.Chart.Version }}
+          imagePullPolicy: {{ $.Values.global.image.pullPolicy }}
+          resources:
+{{ toYaml .nnres | indent 12 }}
+          command: ['/bin/bash','-c']
+          args: ['$HADOOP_PREFIX/bin/hdfs --config /etc/hadoop datanode']
+          env:
+            - name: HADOOP_CONF_DIR
+              value: /etc/hadoop
+          livenessProbe:
+            exec:
+              command:
+                - /dn-scripts/check-status.sh
+            initialDelaySeconds: 60
+            periodSeconds: 30
+          readinessProbe:
+            exec:
+              command:
+                - /dn-scripts/check-status.sh
+            initialDelaySeconds: 60
+            periodSeconds: 30
+          securityContext:
+            privileged: true # 容器在特权模式运行
+          volumeMounts:
+            - name: dn-scripts
+              mountPath: /dn-scripts
+              readOnly: true
+            - name: hdfs-config
+              mountPath: /etc/hadoop
+              readOnly: true
+            - name: hdfs-data-0
+              mountPath: /hadoop/dfs/data/0
+      restartPolicy: Always
+      volumes:
+        - name: dn-scripts
+          configMap:
+            name: hdfs-datanode-scripts
+            defaultMode: 0744
+        - name: hdfs-data-0
+          hostPath:
+            path: /ibnsdata/hadoop-k8s/dfs/hdfs-data-0
+        - name: hdfs-config
+          configMap:
+            name: hdfs-config

@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: hdfs-client
+  namespace: {{ $.Values.global.namespace }}
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: hdfs-client
+    spec:
+      containers:
+        - name: hdfs-client
+          image: {{ $.Values.global.image.repository }}/{{ $.Chart.Name }}:{{ $.Chart.Version }}
+          imagePullPolicy: {{ $.Values.global.image.pullPolicy }}
+          env:
+            - name: HADOOP_CONF_DIR
+              value: /etc/hadoop
+          command: ['/bin/sh', '-c']
+          args: ["while true; do sleep 300 ;echo Loop; done"]
+          volumeMounts:
+            - name: hdfs-config
+              mountPath: /etc/hadoop
+              readOnly: true
+      restartPolicy: Always
+      volumes:
+        - name: hdfs-config
+          configMap:
+            name: hdfs-config
+
+            
+            
+            

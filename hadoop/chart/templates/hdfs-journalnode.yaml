@@ -1,0 +1,64 @@
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: hdfs-journalnode
+  namespace: {{ $.Values.global.namespace }}
+spec:
+  serviceName: hdfs-journalnode
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: hdfs-journalnode
+    spec:
+      affinity:
+      # 该亲和性配置保证test-ss-0,test-ss-1,test-ss-2，每次调度必定位于1，2,3三个节点
+        # 保证副本运行在不同节点
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions: [{ key: app,operator: In,values: [hdfs-journalnode] }]
+            topologyKey: "kubernetes.io/hostname"
+        nodeAffinity:
+          # 保证pod落在指定范围的节点上
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions: [{key: node,operator: In,values: ["1","2","3"]}]
+          # 保证选择顺序
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - {weight: 100, preference: { matchExpressions: [{key: node,operator: In,values: ["1"]}]}}
+          - {weight: 50, preference: { matchExpressions: [{key: node,operator: In,values: ["2"]}]}}
+          - {weight: 1, preference: { matchExpressions: [{key: node,operator: In,values: ["3"]}]}}
+      containers:
+        - name: hdfs-journalnode
+          image: {{ $.Values.global.image.repository }}/{{ $.Chart.Name }}:{{ $.Chart.Version }}
+          imagePullPolicy: {{ $.Values.global.image.pullPolicy }}
+          resources:
+{{ toYaml .jnres | indent 12 }}
+          env:
+            - name: HADOOP_CONF_DIR
+              value: /etc/hadoop
+          command: ['/bin/bash','-c']
+          args: ['$HADOOP_PREFIX/bin/hdfs --config /etc/hadoop journalnode']
+          ports:
+          - containerPort: 8485
+            name: jn
+          - containerPort: 8480
+            name: http
+          volumeMounts:
+            # Mount a subpath of the volume so that the journal subdir would be
+            # a brand new empty dir. This way, we won't get affected by
+            # existing files in the volume top dir.
+            - name: editdir
+              mountPath: /hadoop/dfs/journal
+            - name: hdfs-config
+              mountPath: /etc/hadoop
+              readOnly: true
+      restartPolicy: Always
+      volumes:
+        - name: hdfs-config
+          configMap:
+            name: hdfs-config
+        - name: editdir
+          hostPath:
+            path: /ibnsdata/hadoop-k8s/dfs/jn

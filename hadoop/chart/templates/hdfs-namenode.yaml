@@ -1,0 +1,75 @@
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: hdfs-namenode
+  namespace: {{ $.Values.global.namespace }}
+spec:
+  serviceName: hdfs-namenode
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: hdfs-namenode
+    spec:
+      hostNetwork: true
+      hostPID: true
+      dnsPolicy: ClusterFirstWithHostNet
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions: [{ key: app,operator: In,values: [hdfs-namenode] }]
+            topologyKey: "kubernetes.io/hostname"
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions: [{key: node,operator: In,values: ["1","2"]}]
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - {weight: 100, preference: { matchExpressions: [{key: node,operator: In,values: ["1"]}]}}
+          - {weight: 50, preference: { matchExpressions: [{key: node,operator: In,values: ["2"]}]}}
+      containers:
+        - name: hdfs-namenode
+          image: {{ $.Values.global.image.repository }}/{{ $.Chart.Name }}:{{ $.Chart.Version }}
+          imagePullPolicy: {{ $.Values.global.image.pullPolicy }}
+          resources:
+{{ toYaml .nnres | indent 12 }}
+          env:
+            - name: HADOOP_CONF_DIR
+              value: /etc/hadoop
+            - name: MY_POD
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: NAMENODE_POD_0
+              value: hdfs-namenode-0
+            - name: NAMENODE_POD_1
+              value: hdfs-namenode-1
+          command: ['/bin/bash','-c']
+          # The start script is provided by a config map.
+          args: ['/nn-scripts/format-and-run.sh']
+          ports:
+          - containerPort: 8020
+            name: fs
+          - containerPort: 50070
+            name: http
+          volumeMounts:
+            - name: nn-scripts
+              mountPath: /nn-scripts
+              readOnly: true
+            - name: metadatadir
+              mountPath: /hadoop/dfs/name
+            - name: hdfs-config
+              mountPath: /etc/hadoop
+              readOnly: true
+      restartPolicy: Always
+      volumes:
+        - name: nn-scripts
+          configMap:
+            name: hdfs-namenode-scripts
+            defaultMode: 0744
+        - name: hdfs-config
+          configMap:
+            name: hdfs-config
+        - name: metadatadir
+          hostPath:
+            path: /ibnsdata/hadoop-k8s/dfs/nn

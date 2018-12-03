@@ -1,0 +1,68 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hdfs-namenode-scripts
+  namespace: {{ $.Values.global.namespace }}
+data:
+  # A bootstrap script which will start namenode daemons after conducting
+  # optional metadata initialization steps. The metadata initialization
+  # steps will take place in case the metadata dir is empty,
+  # which will be the case only for the very first run. The specific steps
+  # will differ depending on whether the namenode is active or standby.
+  # We also assume, for the very first run, namenode-0 will be active and
+  # namenode-1 will be standby as StatefulSet will launch namenode-0 first
+  # and zookeeper will determine the sole namenode to be the active one.
+  # For active namenode, the initialization steps will format the metadata,
+  # zookeeper dir and journal node data entries.
+  # For standby namenode, the initialization steps will simply receieve
+  # the first batch of metadata updates from the journal node.
+  format-and-run.sh: |
+    #!/usr/bin/env bash
+    # Exit on error. Append "|| true" if you expect an error.
+    set -o errexit
+    # Exit on error inside any functions or subshells.
+    set -o errtrace
+    # Do not allow use of undefined vars. Use ${VAR:-} to use an undefined VAR
+    set -o nounset
+    # Catch an error in command pipes. e.g. mysqldump fails (but gzip succeeds)
+    # in `mysqldump |gzip`
+    set -o pipefail
+    # Turn on traces, useful while debugging.
+    set -o xtrace
+
+    _HDFS_BIN=$HADOOP_PREFIX/bin/hdfs
+    _METADATA_DIR=/hadoop/dfs/name/current
+    if [[ "$MY_POD" = "$NAMENODE_POD_0" ]]; then
+      if [[ ! -d $_METADATA_DIR ]]; then
+          $_HDFS_BIN --config $HADOOP_CONF_DIR namenode -format  \
+              -nonInteractive hdfs-k8s ||
+              (rm -rf $_METADATA_DIR; exit 1)
+      fi
+      _ZKFC_FORMATTED=/hadoop/dfs/name/current/.hdfs-k8s-zkfc-formatted
+      if [[ ! -f $_ZKFC_FORMATTED ]]; then
+        _OUT=$($_HDFS_BIN --config $HADOOP_CONF_DIR zkfc -formatZK -nonInteractive 2>&1)
+        # zkfc masks fatal exceptions and returns exit code 0
+        (echo $_OUT | grep -q "FATAL") && exit 1
+        touch $_ZKFC_FORMATTED
+      fi
+    elif [[ "$MY_POD" = "$NAMENODE_POD_1" ]]; then
+      if [[ ! -d $_METADATA_DIR ]]; then
+        $_HDFS_BIN --config $HADOOP_CONF_DIR namenode -bootstrapStandby  \
+            -nonInteractive ||  \
+            (rm -rf $_METADATA_DIR; exit 1)
+      fi
+    fi
+    $HADOOP_PREFIX/sbin/hadoop-daemon.sh --config $HADOOP_CONF_DIR start zkfc
+    $_HDFS_BIN --config $HADOOP_CONF_DIR namenode
+
+  # A start script that will just hang indefinitely. A user can then get
+  # inside the pod and debug. Or a user can conduct a custom manual operations.
+  do-nothing.sh: |
+    import time
+    while True:
+      time.sleep(60)
+      print("Help! I'm stuck in a loop!")
+
+  # A start script that has user specified content. Can be used to conduct
+  # ad-hoc operation as specified by a user.
+  custom-run.sh: "#!/bin/bash -x\necho Write your own script content!\necho This message will disappear in 10 seconds.\nsleep 10\n"
