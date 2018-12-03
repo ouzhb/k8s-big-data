@@ -4,6 +4,8 @@
 
 当前仅仅支持运行集群hdfs，单机hdfs或yarn占时不支持运行。
 
+该Helm安装包设计参考该项目：[kubernetes-HDFS](https://github.com/apache-spark-on-k8s/kubernetes-HDFS)
+
 ## 架构
 
 Helm 包运行后包含以下对象：
