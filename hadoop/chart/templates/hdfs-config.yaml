@@ -31,23 +31,23 @@ data:
       </property>
       <property>
         <name>dfs.namenode.rpc-address.hdfs-k8s.nn0</name>
-        <value>hdfs-namenode-0.hdfs-namenode.{{ $.Values.global.namespace }}.svc.cluster.local:8020</value>
+        <value>hdfs-namenode-0.hdfs-namenode.{{ $.Values.global.namespace }}.svc.cluster.local.:8020</value>
       </property>
       <property>
         <name>dfs.namenode.rpc-address.hdfs-k8s.nn1</name>
-        <value>hdfs-namenode-1.hdfs-namenode.{{ $.Values.global.namespace }}.svc.cluster.local:8020</value>
+        <value>hdfs-namenode-1.hdfs-namenode.{{ $.Values.global.namespace }}.svc.cluster.local.:8020</value>
       </property>
       <property>
         <name>dfs.namenode.http-address.hdfs-k8s.nn0</name>
-        <value>hdfs-namenode-0.hdfs-namenode.{{ $.Values.global.namespace }}.svc.cluster.local:50070</value>
+        <value>hdfs-namenode-0.hdfs-namenode.{{ $.Values.global.namespace }}.svc.cluster.local.:50070</value>
       </property>
       <property>
         <name>dfs.namenode.http-address.hdfs-k8s.nn1</name>
-        <value>hdfs-namenode-1.hdfs-namenode.{{ $.Values.global.namespace }}.svc.cluster.local:50070</value>
+        <value>hdfs-namenode-1.hdfs-namenode.{{ $.Values.global.namespace }}.svc.cluster.local.:50070</value>
       </property>
       <property>
         <name>dfs.namenode.shared.edits.dir</name>
-        <value>qjournal://hdfs-journalnode-1.hdfs-journalnode.{{ $.Values.global.namespace }}.svc.cluster.local:8485;hdfs-journalnode-2.hdfs-journalnode.{{ $.Values.global.namespace }}.svc.cluster.local:8485;hdfs-journalnode-0.hdfs-journalnode.{{ $.Values.global.namespace }}.svc.cluster.local:8485/hdfs-k8s</value>
+        <value>qjournal://hdfs-journalnode-0.hdfs-journalnode.{{ $.Values.global.namespace }}.svc.cluster.local.:8485;hdfs-journalnode-1.hdfs-journalnode.{{ $.Values.global.namespace }}.svc.cluster.local.:8485;hdfs-journalnode-2.hdfs-journalnode.{{ $.Values.global.namespace }}.svc.cluster.local.:8485/hdfs-k8s</value>
       </property>
       <property>
         <name>dfs.ha.automatic-failover.enabled</name>
@@ -177,4 +177,5 @@ data:
 
     # A string representing this instance of hadoop. $USER by default.
     export HADOOP_IDENT_STRING=$USER
+    export HADOOP_LOG_DIR=/hadoop/dfs/name
 ---
