@@ -1,0 +1,34 @@
+# A headless service to create DNS records.
+apiVersion: v1
+kind: Service
+metadata:
+  name: spark-master
+  namespace: {{ $.Values.global.namespace }}
+  labels:
+    app: spark-master
+spec:
+  ports:
+  - port: 7077
+    name: master
+  clusterIP: None
+  selector:
+    app: spark-master
+
+---
+# A NodePort for Spark ui
+apiVersion: v1
+kind: Service
+metadata:
+  name: spark-webui
+  namespace: {{ $.Values.global.namespace }}
+  labels:
+    app: spark-webui
+spec:
+  type: NodePort
+  ports:
+  - port: 38080
+    targetPort: 38080
+    nodePort: 32030
+    name: spark-webui
+  selector:
+    app: spark-master

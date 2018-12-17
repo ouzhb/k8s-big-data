@@ -1,0 +1,61 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: spark-scripts
+  namespace: {{ $.Values.global.namespace }}
+data:
+  health.py: |
+    # -*- coding: utf-8 -*-
+    import os, subprocess, socket, time, sys
+    def check_process(process_name):
+        res = os.popen("jps | grep {process_name}".format(process_name=process_name)).read()
+        if res.strip() == "":
+            print "Get {process_name} PID failed.".format(process_name=process_name)
+            return ""
+        else:
+            pid = res.strip().split(" ")[0]
+            return pid
+    def check_port(port):
+        # Get IP address
+        hostname = socket.gethostname()
+        address = socket.gethostbyname(hostname)
+        s = socket.socket()
+        try:
+            s.connect((address, port))
+            return True
+        except socket.error, e:
+            print "Connected to %s on port %s failed: %s" % (address, port, e)
+            return False
+        finally:
+            s.close()
+    def health(process_name, ports):
+        pid = check_process(process_name)
+        if pid == "":
+            print "Can't get PID for {process_name} .Health check failed.".format(process_name=process_name)
+            exit(1)
+        for port in ports.split(","):
+            if not check_port(int(port)):
+                print "Can't connected port {port}. Health check failed.".format(port=port)
+                exit(1)
+    if __name__ == '__main__':
+        if sys.argv.__len__() < 3:
+            exit(-1)
+        health(sys.argv[1], sys.argv[2])
+  s-master.sh: |
+    #!/usr/bin/env bash
+
+    $SPARK_HOME/sbin/start-master.sh
+    while true
+    do
+      echo "Please see logs at /kubedata/spark/logs."
+      sleep 10
+    done
+  s-worker.sh: |
+    #!/usr/bin/env bash
+    $SPARK_HOME/sbin/start-slave.sh spark://spark-master-0.spark-master.{{ .Values.global.namespace }}.svc.cluster.local.:7077
+    while true
+    do
+      echo "Please see logs at /kubedata/spark/logs."
+      sleep 10
+    done
+---

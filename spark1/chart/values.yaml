@@ -1,0 +1,12 @@
+global:
+  namespace: default
+  image:
+    repository: rg-bigdata
+    pullPolicy: IfNotPresent
+
+zookeeper: "zk-cs:2181"
+localdir: "/kubedata/spark"
+workerVcore: "10"
+workerMem: "10g"
+
+

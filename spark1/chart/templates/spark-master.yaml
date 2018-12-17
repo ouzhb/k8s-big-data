@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: spark-master
+  namespace: {{ .Values.global.namespace }}
+spec:
+  selector:
+    matchLabels:
+      app: spark-master
+  serviceName: spark-master
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: spark-master
+    spec:
+      hostNetwork: true
+      hostPID: true
+      dnsPolicy: ClusterFirstWithHostNet
+      containers:
+      - name: spark-master
+        image: {{ .Values.global.image.repository }}/{{ .Chart.Name }}:{{ .Chart.Version }}
+        imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+        env:
+        - name: SPARK_CONF_DIR
+          value: "/etc/spark"
+        command: ["/scripts/s-master.sh"]
+        ports:
+        - containerPort: 7077
+          name: master
+        - containerPort: 38080
+          name: web
+        volumeMounts:
+        - name: scripts
+          mountPath: /scripts
+          readOnly: true
+        - name: config
+          mountPath: /etc/spark
+          readOnly: true
+        - name: local-dir
+          mountPath: /kubedata/spark/
+      restartPolicy: Always
+      volumes:
+      - name: scripts
+        configMap:
+          name: spark-scripts
+          defaultMode: 0744
+      - name: config
+        configMap:
+          name: spark-config
+      - name: local-dir
+        hostPath:
+          path: {{ .Values.localdir }}
+

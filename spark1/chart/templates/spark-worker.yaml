@@ -1,0 +1,54 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spark-worker
+  namespace: {{ .Values.global.namespace }}
+spec:
+  selector:
+    matchLabels:
+      app: spark-worker
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: spark-worker
+    spec:
+      hostNetwork: true
+      hostPID: true
+      dnsPolicy: ClusterFirstWithHostNet
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions: [{ key: app,operator: In,values: [spark-worker] }]
+            topologyKey: "kubernetes.io/hostname"
+      containers:
+      - name: spark-worker
+        image: {{ .Values.global.image.repository }}/{{ .Chart.Name }}:{{ .Chart.Version }}
+        imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+        env:
+        - name: SPARK_CONF_DIR
+          value: "/etc/spark"
+        command: ["/scripts/s-worker.sh"]
+        volumeMounts:
+        - name: scripts
+          mountPath: /scripts
+          readOnly: true
+        - name: config
+          mountPath: /etc/spark
+          readOnly: true
+        - name: local-dir
+          mountPath: /kubedata/spark/
+      restartPolicy: Always
+      volumes:
+      - name: scripts
+        configMap:
+          name: spark-scripts
+          defaultMode: 0744
+      - name: config
+        configMap:
+          name: spark-config
+      - name: local-dir
+        hostPath:
+          path: {{ .Values.localdir }}
