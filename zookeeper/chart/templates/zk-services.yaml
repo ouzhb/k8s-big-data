@@ -1,0 +1,51 @@
+# Headless Service 用于在ZK内部进行选举操作
+# 在容器内部可以直接访问 zk-{X}.zk-hs.default.svc.cluster.local.
+apiVersion: v1
+kind: Service
+metadata:
+  name: zk-hs
+  labels:
+    app: zk
+spec:
+  ports:
+  - port: 2888
+    name: server
+  - port: 3888
+    name: leader-election
+  clusterIP: None
+  selector:
+    app: zk
+
+# Service 用户在ZK外部的客户端连接ZK集群
+# 在容器内部，可以直接解析zk-cs作为其他服务连接ZK的域名。
+---
+#apiVersion: v1
+#kind: Service
+#metadata:
+#  name: zk-cs
+#  labels:
+#    app: zk
+#spec:
+#  ports:
+#  - port: 2181
+#    name: client
+#  selector:
+#    app: zk
+
+# 使用nodePort作为zk的负载均衡，任意节点都可以通过数组机节点访问zk
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: zk-cs
+  labels:
+    app: zk
+spec:
+  type: NodePort
+  ports:
+  - port: 2181
+    targetPort: 2181
+    nodePort: 32181
+    name: client
+  selector:
+    app: zk
