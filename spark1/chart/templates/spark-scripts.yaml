@@ -58,4 +58,13 @@ data:
       echo "Please see logs at /kubedata/spark/logs."
       sleep 10
     done
+  s-history.sh: |
+    #!/usr/bin/env bash
+    hdfs dfs -mkdir -p /user/spark/history
+    $SPARK_HOME/sbin/start-history-server.sh
+    while true
+    do
+      echo "Please see logs at /kubedata/spark/logs."
+      sleep 10
+    done
 ---

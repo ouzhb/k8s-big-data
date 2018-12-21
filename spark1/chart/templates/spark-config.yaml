@@ -26,14 +26,12 @@ data:
     # This is useful for setting default environmental settings.
 
     # Example:
-    # spark.master                     spark://master:7077
-    # spark.eventLog.enabled           true
-    # spark.eventLog.dir               hdfs://namenode:8021/directory
+    spark.master                     spark://spark-master-0.spark-master.{{ .Values.global.namespace }}.svc.cluster.local.:7077
+    spark.eventLog.enabled           true
+    spark.eventLog.dir               hdfs://hdfs-k8s/user/spark/history
     # spark.serializer                 org.apache.spark.serializer.KryoSerializer
     # spark.driver.memory              5g
     # spark.executor.extraJavaOptions  -XX:+PrintGCDetails -Dkey=value -Dnumbers="one two three"
-
-    spark.master spark://spark-master-0.spark-master.{{ .Values.global.namespace }}.svc.cluster.local.:7077
 
   spark-env.sh: |
     #!/usr/bin/env bash
@@ -115,6 +113,7 @@ data:
     SPARK_LOCAL_DIRS={{ .Values.localdir }}/tmp
     SPARK_MASTER_OPTS="-Dspark.deploy.recoveryMode=ZOOKEEPER -Dspark.deploy.zookeeper.url={{ .Values.zookeeper }}"
     SPARK_WORKER_OPTS=""
+    SPARK_HISTORY_OPTS="-Dspark.history.ui.port=18080 -Dspark.history.fs.logDirectory=hdfs://hdfs-k8s/user/spark/history"
 
   log4j.properties: |
     #

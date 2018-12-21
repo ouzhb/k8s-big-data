@@ -8,5 +8,6 @@ zookeeper: "zk-cs:2181"
 localdir: "/kubedata/spark"
 workerVcore: "10"
 workerMem: "10g"
+hdfsWithConfigMap: false
 
 

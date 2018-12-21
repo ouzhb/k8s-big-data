@@ -30,6 +30,8 @@ spec:
         env:
         - name: SPARK_CONF_DIR
           value: "/etc/spark"
+        - name: HADOOP_CONF_DIR
+          value: "/etc/hadoop"
         command: ["/scripts/s-worker.sh"]
         volumeMounts:
         - name: scripts
@@ -40,6 +42,10 @@ spec:
           readOnly: true
         - name: local-dir
           mountPath: /kubedata/spark/
+{{- if .Values.hdfsWithConfigMap }}
+        - name: hdfs-config
+          mountPath: /etc/hadoop
+{{- end}}
       restartPolicy: Always
       volumes:
       - name: scripts
@@ -52,3 +58,8 @@ spec:
       - name: local-dir
         hostPath:
           path: {{ .Values.localdir }}
+{{- if .Values.hdfsWithConfigMap }}
+      - name: hdfs-config
+        configMap:
+          name: hdfs-config
+{{- end}}
