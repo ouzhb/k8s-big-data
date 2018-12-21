@@ -1,7 +1,7 @@
 global:
   namespace: assurance
   image:
-    repository: harbor.mig.ruijie.net/rgibns-snapshot
+    repository: rg-bigdata
     pullPolicy: IfNotPresent
   single: false
 
