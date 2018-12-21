@@ -1,0 +1,62 @@
+{{- if .Values.hdfsWithConfigMap }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spark-jobhistory
+  namespace: {{ .Values.global.namespace }}
+spec:
+  selector:
+    matchLabels:
+      app: spark-jobhistory
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: spark-jobhistory
+    spec:
+      hostNetwork: true
+      hostPID: true
+      dnsPolicy: ClusterFirstWithHostNet
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions: [{ key: app,operator: In,values: [spark-jobhistory] }]
+            topologyKey: "kubernetes.io/hostname"
+      containers:
+      - name: spark-jobhistory
+        image: {{ .Values.global.image.repository }}/{{ .Chart.Name }}:{{ .Chart.Version }}
+        imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+        env:
+        - name: SPARK_CONF_DIR
+          value: "/etc/spark"
+        - name: HADOOP_CONF_DIR
+          value: "/etc/hadoop"
+        command: ["/scripts/s-history.sh"]
+        volumeMounts:
+        - name: scripts
+          mountPath: /scripts
+          readOnly: true
+        - name: config
+          mountPath: /etc/spark
+          readOnly: true
+        - name: local-dir
+          mountPath: /kubedata/spark/
+        - name: hdfs-config
+          mountPath: /etc/hadoop
+      restartPolicy: Always
+      volumes:
+      - name: scripts
+        configMap:
+          name: spark-scripts
+          defaultMode: 0744
+      - name: config
+        configMap:
+          name: spark-config
+      - name: local-dir
+        hostPath:
+          path: {{ .Values.localdir }}
+      - name: hdfs-config
+        configMap:
+          name: hdfs-config
+{{- end}}
