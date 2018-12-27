@@ -1,0 +1,114 @@
+appVersion: 6.5.1
+client:
+  antiAffinity: soft
+  heapSize: 512m
+  ingress:
+    annotations: {}
+    enabled: false
+    hosts:
+    - chart-example.local
+    path: /
+    tls: []
+  loadBalancerIP: {}
+  loadBalancerSourceRanges: {}
+  name: client
+  nodeAffinity: {}
+  nodeSelector: {}
+  podDisruptionBudget:
+    enabled: false
+    minAvailable: 1
+  priorityClassName: ""
+  replicas: 2
+  resources:
+    limits:
+      cpu: "1"
+    requests:
+      cpu: 25m
+      memory: 512Mi
+  serviceType: ClusterIP
+  tolerations: []
+cluster:
+  additionalJavaOpts: ""
+  config: {}
+  env:
+    MINIMUM_MASTER_NODES: "2"
+  name: elasticsearch
+  xpackEnable: false
+data:
+  antiAffinity: soft
+  exposeHttp: false
+  heapSize: 1536m
+  hooks:
+    drain:
+      enabled: true
+  name: data
+  nodeAffinity: {}
+  nodeSelector: {}
+  persistence:
+    accessMode: ReadWriteOnce
+    enabled: true
+    name: data
+    size: 30Gi
+  podDisruptionBudget:
+    enabled: false
+    maxUnavailable: 1
+  priorityClassName: ""
+  replicas: 2
+  resources:
+    limits:
+      cpu: "1"
+    requests:
+      cpu: 25m
+      memory: 1536Mi
+  terminationGracePeriodSeconds: 3600
+  tolerations: []
+  updateStrategy:
+    type: OnDelete
+extraInitContainers: ""
+image:
+  pullPolicy: IfNotPresent
+  repository: docker.elastic.co/elasticsearch/elasticsearch-oss
+  tag: 6.5.3
+initImage:
+  pullPolicy: Always
+  repository: busybox
+  tag: latest
+master:
+  antiAffinity: soft
+  exposeHttp: false
+  heapSize: 512m
+  name: master
+  nodeAffinity: {}
+  nodeSelector: {}
+  persistence:
+    accessMode: ReadWriteOnce
+    enabled: true
+    name: data
+    size: 4Gi
+  podDisruptionBudget:
+    enabled: false
+    minAvailable: 2
+  priorityClassName: ""
+  replicas: 3
+  resources:
+    limits:
+      cpu: "1"
+    requests:
+      cpu: 25m
+      memory: 512Mi
+  tolerations: []
+  updateStrategy:
+    type: OnDelete
+podSecurityPolicy:
+  annotations: {}
+  enabled: false
+serviceAccounts:
+  client:
+    create: true
+    name: null
+  data:
+    create: true
+    name: null
+  master:
+    create: true
+    name: null

@@ -1,0 +1,7 @@
+global:
+  namespace: default
+  image:
+    repository: rg-bigdata
+    pullPolicy: IfNotPresent
+
+single-mode: Ture
