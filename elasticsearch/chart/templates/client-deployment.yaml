@@ -2,38 +2,30 @@ apiVersion: apps/v1beta1
 kind: Deployment
 metadata:
   labels:
-    app: elasticsearch
-    component: "client"
-  name: rg-elasticsearch-client
+    app: elasticsearch-client
+  name: elasticsearch-client
 spec:
-  replicas: 2
+  replicas: {{ $.Values.replicas.client }}
   template:
     metadata:
       labels:
-        app: elasticsearch
-        component: "client"
-        release: rg
+        app: elasticsearch-client
     spec:
-      serviceAccountName: rg-elasticsearch-client
+      serviceAccountName: elasticsearch-client
       securityContext:
         fsGroup: 1000
       affinity:
         podAntiAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 1
-            podAffinityTerm:
-              topologyKey: kubernetes.io/hostname
-              labelSelector:
-                matchLabels:
-                  app: "elasticsearch"
-                  release: "rg"
-                  component: "client"
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions: [{ key: app,operator: In,values: [elasticsearch-client] }]
+            topologyKey: "kubernetes.io/hostname"
       initContainers:
       # see https://www.elastic.co/guide/en/elasticsearch/reference/current/vm-max-map-count.html
       # and https://www.elastic.co/guide/en/elasticsearch/reference/current/setup-configuration-memory.html#mlockall
       - name: "sysctl"
-        image: "busybox:latest"
-        imagePullPolicy: "Always"
+        image: {{ $.Values.global.image.repository }}/busybox:latest
+        imagePullPolicy: {{ $.Values.global.image.pullPolicy }}
         command: ["sysctl", "-w", "vm.max_map_count=262144"]
         securityContext:
           privileged: true
@@ -45,22 +37,19 @@ spec:
         - name: NODE_MASTER
           value: "false"
         - name: DISCOVERY_SERVICE
-          value: rg-elasticsearch-discovery
+          value: elasticsearch-discovery
         - name: PROCESSORS
-          valueFrom:
-            resourceFieldRef:
-              resource: limits.cpu
+          value: "{{ $.Values.cpu.client }}"
         - name: ES_JAVA_OPTS
           value: "-Djava.net.preferIPv4Stack=true -Xms512m -Xmx512m "
         - name: MINIMUM_MASTER_NODES
-          value: "2"
+          value: "{{ $.Values.minMasterNodes }}"
         resources:
             limits:
-              cpu: "1"
+              cpu: "{{ $.Values.cpu.client }}"
             requests:
               cpu: 25m
               memory: 512Mi
-            
         readinessProbe:
           httpGet:
             path: /_cluster/health
@@ -71,8 +60,8 @@ spec:
             path: /_cluster/health?local=true
             port: 9200
           initialDelaySeconds: 90
-        image: "docker.elastic.co/elasticsearch/elasticsearch-oss:6.5.3"
-        imagePullPolicy: "IfNotPresent"
+        image: {{ $.Values.global.image.repository }}/{{ $.Chart.Name }}:{{ $.Chart.Version }}
+        imagePullPolicy: {{ $.Values.global.image.pullPolicy }}
         ports:
         - containerPort: 9200
           name: http
@@ -85,4 +74,4 @@ spec:
       volumes:
       - name: config
         configMap:
-          name: rg-elasticsearch
+          name: elasticsearch

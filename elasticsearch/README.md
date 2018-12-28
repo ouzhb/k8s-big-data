@@ -42,3 +42,13 @@ Helm项目下可以找到多个ES相关Helm包(均在stable目录下)：
 [JVM配置](https://www.elastic.co/guide/en/elasticsearch/reference/current/jvm-options.html)
 
 [Logging配置](https://www.elastic.co/guide/en/elasticsearch/reference/current/logging.html#logging)
+
+## ES的基本操作
+
+```shell
+# 当前节点、集群、版本等信息
+curl -XGET 'http://elasticsearch-client.default.svc.cluster.local.:9200/_cluster/health?pretty'
+
+# 创建index
+curl -X PUT 'http://elasticsearch-client.default.svc.cluster.local.:9200/testindex'
+```

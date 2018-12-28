@@ -3,48 +3,37 @@ apiVersion: apps/v1beta1
 kind: StatefulSet
 metadata:
   labels:
-    app: elasticsearch
-    chart: elasticsearch-1.15.1
-    component: "data"
-    heritage: Tiller
-    release: wonderful-anteater
-  name: wonderful-anteater-elasticsearch-data
+    app: elasticsearch-data
+  name: elasticsearch-data
 spec:
-  serviceName: wonderful-anteater-elasticsearch-data
-  replicas: 2
+  serviceName: elasticsearch-data
+  replicas: {{ $.Values.replicas.data }}
   template:
     metadata:
       labels:
-        app: elasticsearch
-        component: "data"
-        release: wonderful-anteater
+        app: elasticsearch-data
     spec:
-      serviceAccountName: wonderful-anteater-elasticsearch-data
+      serviceAccountName: elasticsearch-data
       securityContext:
         fsGroup: 1000
       affinity:
         podAntiAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 1
-            podAffinityTerm:
-              topologyKey: kubernetes.io/hostname
-              labelSelector:
-                matchLabels:
-                  app: "elasticsearch"
-                  release: "wonderful-anteater"
-                  component: "data"
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions: [{ key: app,operator: In,values: [elasticsearch-data] }]
+            topologyKey: "kubernetes.io/hostname"
       initContainers:
       # see https://www.elastic.co/guide/en/elasticsearch/reference/current/vm-max-map-count.html
       # and https://www.elastic.co/guide/en/elasticsearch/reference/current/setup-configuration-memory.html#mlockall
       - name: "sysctl"
-        image: "busybox:latest"
-        imagePullPolicy: "Always"
+        image: {{ $.Values.global.image.repository }}/busybox:latest
+        imagePullPolicy: {{ $.Values.global.image.pullPolicy }}
         command: ["sysctl", "-w", "vm.max_map_count=262144"]
         securityContext:
           privileged: true
       - name: "chown"
-        image: "docker.elastic.co/elasticsearch/elasticsearch-oss:6.5.3"
-        imagePullPolicy: "IfNotPresent"
+        image: {{ $.Values.global.image.repository }}/{{ $.Chart.Name }}:{{ $.Chart.Version }}
+        imagePullPolicy: {{ $.Values.global.image.pullPolicy }}
         command:
         - /bin/bash
         - -c
@@ -59,30 +48,26 @@ spec:
       - name: elasticsearch
         env:
         - name: DISCOVERY_SERVICE
-          value: wonderful-anteater-elasticsearch-discovery
+          value: elasticsearch-discovery
         - name: NODE_MASTER
           value: "false"
         - name: PROCESSORS
-          valueFrom:
-            resourceFieldRef:
-              resource: limits.cpu
+          value: "{{ $.Values.cpu.data }}"
         - name: ES_JAVA_OPTS
           value: "-Djava.net.preferIPv4Stack=true -Xms1536m -Xmx1536m "
         - name: MINIMUM_MASTER_NODES
-          value: "2"
-        image: "docker.elastic.co/elasticsearch/elasticsearch-oss:6.5.3"
-        imagePullPolicy: "IfNotPresent"
+          value: "{{ $.Values.minMasterNodes }}"
+        image: {{ $.Values.global.image.repository }}/{{ $.Chart.Name }}:{{ $.Chart.Version }}
+        imagePullPolicy: {{ $.Values.global.image.pullPolicy }}
         ports:
         - containerPort: 9300
           name: transport
-
         resources:
             limits:
-              cpu: "1"
+              cpu: "{{ $.Values.cpu.data }}"
             requests:
               cpu: 25m
               memory: 1536Mi
-            
         readinessProbe:
           httpGet:
             path: /_cluster/health?local=true
@@ -111,15 +96,19 @@ spec:
       volumes:
       - name: config
         configMap:
-          name: wonderful-anteater-elasticsearch
+          name: elasticsearch
+      # 没有共享存储的场景使用本地存储
+      - name: data
+        hostPath:
+          path: /kubedata/elasticsearch/data-data
   updateStrategy:
     type: OnDelete
-  volumeClaimTemplates:
-  - metadata:
-      name: data
-    spec:
-      accessModes:
-        - "ReadWriteOnce"
-      resources:
-        requests:
-          storage: "30Gi"
+#  volumeClaimTemplates:
+#  - metadata:
+#      name: data
+#    spec:
+#      accessModes:
+#        - "ReadWriteOnce"
+#      resources:
+#        requests:
+#          storage: "30Gi"

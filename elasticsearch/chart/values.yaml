@@ -4,4 +4,13 @@ global:
     repository: rg-bigdata
     pullPolicy: IfNotPresent
 
-single-mode: Ture
+replicas:
+  client: 1 # client实例的数目
+  data: 1 # data实例的数目
+  master: 1 # master 节点实例的数目
+
+cpu:
+  client: 1 # CPU限制,务必指定整数个CPU
+  data: 1
+  master: 1
+minMasterNodes: 1
