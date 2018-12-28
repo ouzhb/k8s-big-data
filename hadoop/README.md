@@ -100,9 +100,9 @@ $HADOOP_PREFIX/bin/hdfs --config /etc/hadoop datanode
 |所有POD|/dn-scripts|ConfigMap：hdfs-config||
 |NN|/nn-scripts|ConfigMap：hdfs-namenode-scripts||
 |DN|/dn-scripts|ConfigMap：hdfs-datanode-scripts||
-|NN|/hadoop/dfs/name|/ibnsdata/hadoop-k8s/dfs/nn||
-|DN|hdfs-data-0|/ibnsdata/hadoop-k8s/dfs/hdfs-data-0||
-|JN|/hadoop/dfs/journal|/ibnsdata/hadoop-k8s/dfs/jn|
+|NN|/hadoop/dfs/name|/kubedata/hadoop-k8s/dfs/nn||
+|DN|hdfs-data-0|/kubedata/hadoop-k8s/dfs/hdfs-data-0||
+|JN|/hadoop/dfs/journal|/kubedata/hadoop-k8s/dfs/jn|
 
 ### 容器CPU & Mem
 

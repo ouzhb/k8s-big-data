@@ -72,4 +72,4 @@ spec:
             name: hdfs-config
         - name: metadatadir
           hostPath:
-            path: /ibnsdata/hadoop-k8s/dfs/nn
+            path: /kubedata/hadoop-k8s/dfs/nn

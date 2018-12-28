@@ -61,7 +61,7 @@ spec:
             defaultMode: 0744
         - name: hdfs-data-0
           hostPath:
-            path: /ibnsdata/hadoop-k8s/dfs/hdfs-data-0
+            path: /kubedata/hadoop-k8s/dfs/hdfs-data-0
         - name: hdfs-config
           configMap:
             name: hdfs-config
