@@ -2,6 +2,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
+  namespace: {{ $.Values.global.namespace }}
   name: elasticsearch
   labels:
     app: elasticsearch
@@ -28,10 +29,10 @@ data:
 
     # avoid split-brain w/ a minimum consensus of two masters plus a data node
     # 脑裂相关配置
-    gateway.expected_master_nodes: ${EXPECTED_MASTER_NODES:1}
+    gateway.expected_master_nodes: {{ $.Values.minMasterNodes }}
     gateway.expected_data_nodes: ${EXPECTED_DATA_NODES:1}
     gateway.recover_after_time: ${RECOVER_AFTER_TIME:5m}
-    gateway.recover_after_master_nodes: ${RECOVER_AFTER_MASTER_NODES:1}
+    gateway.recover_after_master_nodes: {{ $.Values.minMasterNodes }}
     gateway.recover_after_data_nodes: ${RECOVER_AFTER_DATA_NODES:1}
   log4j2.properties: |-
     status = error

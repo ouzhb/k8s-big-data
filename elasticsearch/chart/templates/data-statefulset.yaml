@@ -2,6 +2,7 @@
 apiVersion: apps/v1beta1
 kind: StatefulSet
 metadata:
+  namespace: {{ $.Values.global.namespace }}
   labels:
     app: elasticsearch-data
   name: elasticsearch-data
