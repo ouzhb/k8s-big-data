@@ -49,6 +49,18 @@ Helm项目下可以找到多个ES相关Helm包(均在stable目录下)：
 # 当前节点、集群、版本等信息
 curl -XGET 'http://elasticsearch-client.default.svc.cluster.local.:9200/_cluster/health?pretty'
 
-# 创建index
-curl -X PUT 'http://elasticsearch-client.default.svc.cluster.local.:9200/testindex'
+# 创建Index
+curl -XPUT 'http://elasticsearch-client.default.svc.cluster.local.:9200/testindex'
+
+# 查看所有Index
+curl -XGET 'http://elasticsearch-client.default.svc.cluster.local.:9200/_cat/indices?v'
+
+# 插入Doc
+curl -XPUT 'http://elasticsearch-client.default.svc.cluster.local.:9200/testindex/person/1'  -H "Content-Type: application/json"  -d '{"user": "张三", "title": "工程师", "desc": "数据库管理"}' 
+curl -XPUT 'http://elasticsearch-client.default.svc.cluster.local.:9200/testindex/person/2'  -H "Content-Type: application/json"  -d '{"user": "李四", "title": "测试", "desc": "数据库管理"}' 
+curl -XPUT 'http://elasticsearch-client.default.svc.cluster.local.:9200/testindex/person/3'  -H "Content-Type: application/json"  -d '{"user": "王五", "title": "产品", "desc": "数据库管理"}' 
+
+# 查询Doc
+curl -XPOST "http://elasticsearch-client.default.svc.cluster.local.:9200/testindex/person/_search?pretty" -H "Content-Type: application/json"  -d '{"query":{ "multi_match":{"query":"张三","fields":["user","desc"]}}}'
+
 ```

@@ -19,6 +19,8 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
+  annotations:
+    service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
   labels:
     app: elasticsearch
   name: elasticsearch-discovery
@@ -26,6 +28,9 @@ spec:
   clusterIP: None
   ports:
     - port: 9300
+      protocol: TCP
       targetPort: transport
+  publishNotReadyAddresses: true # 不知道这个配置干啥的？？？
+  sessionAffinity: None # 不知道这个配置干啥的？？？
   selector:
     app: elasticsearch-master
