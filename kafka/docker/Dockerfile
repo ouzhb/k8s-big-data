@@ -11,17 +11,19 @@ ENV KAFKA_VERSION=$kafka_version \
 ENV PATH=${PATH}:${KAFKA_HOME}/bin
 #
 COPY download-kafka.sh create-topics.sh kafka_${SCALA_VERSION}-${KAFKA_VERSION}.tgz /tmp/
-COPY health/ /health/
 
 RUN mkdir /init \
- && chmod a+x /init/ \ls
+ && chmod a+x /init/ \
  && chmod a+x /tmp/*.sh \
- && chmod a+x /health/*.sh \
  && mv /tmp/create-topics.sh /usr/bin \
  && sync \
  && tar xfz /tmp/kafka_${SCALA_VERSION}-${KAFKA_VERSION}.tgz -C /opt \
  && rm /tmp/kafka_${SCALA_VERSION}-${KAFKA_VERSION}.tgz \
  && ln -s /opt/kafka_${SCALA_VERSION}-${KAFKA_VERSION} /opt/kafka \
- && rm /tmp/*
+ && rm /tmp/* \
+ && apt-get update \
+ && apt install -y tzdata curl --no-install-recommends \
+ && rm -rf /etc/localtime \
+ && ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime \
+ && rm -rf /var/lib/apt/lists/*
 
-VOLUME ["/kafka"]
