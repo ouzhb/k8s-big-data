@@ -1,0 +1,49 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kafka-scripts
+  namespace: {{ $.Values.global.namespace }}
+data:
+  broker-start.py: |
+    import os
+    import socket
+    import subprocess
+    import json
+
+    def check_node(broker_id):
+        with open("/var/run/secrets/kubernetes.io/serviceaccount/token", mode="r") as tmp:
+            token = tmp.read()
+        kube_addr = os.environ["KUBERNETES_SERVICE_HOST"]
+        kube_port = os.environ["KUBERNETES_PORT_443_TCP_PORT"]
+        node_name = os.environ["NODE_NAME"]
+        cmd = 'curl -sSk -H "Authorization: Bearer {token}" ' \
+              'https://{host}:{port}/api/v1/nodes/{node}'.format(token=token,
+                                                                 host=kube_addr,
+                                                                 port=kube_port,
+                                                                 node=node_name)
+        node_msg = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE).stdout.read()
+        labels = json.loads(node_msg)['metadata']["labels"]
+        node_id = labels.get("node", None)
+        if int(node_id) != broker_id:
+            print("ERROR HOST Node Match!")
+            exit(1)
+
+    def config(broker_id, templates_path="/config-templates", config_path="/etc/kafka"):
+        os.system("mkdir -p {config_path} &&"
+                  " cp {templates_path}/log4j.properties {config_path}".format(config_path=config_path,
+                                                                               templates_path=templates_path))
+        hostip = socket.gethostbyname(socket.getfqdn(socket.gethostname()))
+        with open(os.path.join(templates_path,"server.properties.templates"), mode="r") as tmp:
+            templates = tmp.read()
+        config = templates.replace("##HOST_IP##", hostip).replace("##BROKER_ID##", str(broker_id))
+        with open(os.path.join(config_path,"server.properties"), mode="w") as tmp:
+            tmp.write(config)
+
+    if __name__ == "__main__":
+        pod_name = os.environ["POD_NAME"]
+        broker_id = int(pod_name.strip().split("-")[-1]) + 1
+        check_node(broker_id)
+        config(broker_id)
+        os.system("/opt/kafka/bin/kafka-server-start.sh /etc/kafka/server.properties")
+
+---

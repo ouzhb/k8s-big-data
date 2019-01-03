@@ -1,0 +1,21 @@
+global:
+  namespace: default
+  image:
+    repository: rg-bigdata
+    pullPolicy: IfNotPresent
+  single: false
+
+zookeeper: "zk-cs:2181"
+
+jmxPort: 43001
+java_options: "-Xmx2G -Xms512m"
+log4j_options: ""
+extra_args: ""
+
+resources:
+  limits:
+    cpu: "1"
+    memory: 2Gi
+  requests:
+    cpu: "500m"
+    memory: 1Gi

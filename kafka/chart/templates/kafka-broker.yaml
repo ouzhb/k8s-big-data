@@ -1,0 +1,80 @@
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: kafka-broker
+  namespace: {{ $.Values.global.namespace }}
+spec:
+  serviceName: kafka-broker
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: kafka-broker
+    spec:
+      serviceAccountName: kafka
+      hostNetwork: true
+      hostPID: true
+      dnsPolicy: ClusterFirstWithHostNet
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions: [{ key: app,operator: In,values: [kafka-broker] }]
+            topologyKey: "kubernetes.io/hostname"
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions: [{key: node,operator: In,values: ["1","2","3"]}]
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - {weight: 100, preference: { matchExpressions: [{key: node,operator: In,values: ["1"]}]}}
+          - {weight: 50, preference: { matchExpressions: [{key: node,operator: In,values: ["2"]}]}}
+          - {weight: 1, preference: { matchExpressions: [{key: node,operator: In,values: ["3"]}]}}
+      containers:
+        - name: kafka-broker
+          image: {{ $.Values.global.image.repository }}/{{ $.Chart.Name }}:{{ $.Chart.Version }}
+          imagePullPolicy: {{ $.Values.global.image.pullPolicy }}
+          command: ["python","/scripts/broker-start.py"]
+          env:
+            - name: JMX_PORT
+              value: "{{ .Values.jmxPort }}"
+            - name: KAFKA_HEAP_OPTS
+              value: "{{ .Values.java_options }}"
+            - name: KAFKA_LOG4J_OPTS
+              value: "{{ .Values.log4j_options }}"
+            - name: EXTRA_ARGS
+              value: "{{ .Values.extra_args }}"
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+          ports:
+          - containerPort: 9092
+          volumeMounts:
+            - name: kafka-config
+              mountPath: /config-templates
+              readOnly: true
+            - name: kafka-data
+              mountPath: /data
+            - name: kafka-scripts
+              mountPath: /scripts
+              readOnly: true
+      restartPolicy: Always
+      volumes:
+        - name: kafka-config
+          configMap:
+            name: kafka-config
+            defaultMode: 0744
+        - name: kafka-scripts
+          configMap:
+            name: kafka-scripts
+            defaultMode: 0744
+# use by local filesystem when you don't have a pv
+        - name: kafka-data
+          hostPath:
+            path: /kubedata/kafka/data
