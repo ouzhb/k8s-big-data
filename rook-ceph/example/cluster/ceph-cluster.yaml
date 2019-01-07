@@ -1,0 +1,23 @@
+apiVersion: ceph.rook.io/v1
+kind: CephCluster
+metadata:
+  name: rook-ceph
+  namespace: rook-ceph
+spec:
+  cephVersion:
+    # see the "Cluster Settings" section below for more details on which image of ceph to run
+    image: ceph/ceph:v13.2.2-20181023
+  dataDirHostPath: /var/lib/rook # 这个配用来保存Rook的数据和配置文件，并不保存Ceph中的实际存储数据
+  dashboard:
+    enabled: true # 开启一个Dashboard配置
+  mon:
+    count: 1
+  storage: # 支持使用硬盘设备或者目录作为ceph文件的实际存储
+    useAllNodes: false # 只有当该参数配置为true时，才能通过kubectl -n rook-ceph edit 动态调节ceph集群的规模
+    useAllDevices: false # 设定为True时会使用所有没有被创建分区或者使用的磁盘，通过deviceFilter 可以过滤掉某些磁盘
+    config:
+      journalSizeMB: "1024"
+    nodes:
+    - name: "lqing" # 应该填写在Kubernetes上看到节点名称
+      directories:
+      - path: "/kubedata/ceph"
