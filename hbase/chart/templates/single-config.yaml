@@ -1,0 +1,32 @@
+{{- if .Values.single }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hbase-single-config
+  namespace: {{ $.Values.global.namespace }}
+data:
+  hbase-site.xml: |
+    <configuration>
+      <property>
+        <name>hbase.rootdir</name>
+        <value>file:///hbase/data</value>
+      </property>
+      <property>
+        <name>hbase.zookeeper.property.dataDir</name>
+        <value>/hbase/zookeeper</value>
+      </property>
+      <property>
+        <name>hbase.unsafe.stream.capability.enforce</name>
+        <value>false</value>
+      </property>
+      <property>
+        <name>hbase.zookeeper.property.clientPort</name>
+        <value>12181</value>
+      </property>
+    </configuration>
+
+  start-single.sh: |
+    #!/usr/bin/env bash
+    $HBASE_HOME/bin/start-hbase.sh
+    tailf /usr/local/hbase/logs/hbase--master-$HOSTNAME.log
+{{- end}}

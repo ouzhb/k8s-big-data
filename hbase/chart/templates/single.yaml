@@ -1,0 +1,48 @@
+{{- if .Values.single }}
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: hbase-single
+  namespace: {{ $.Values.global.namespace }}
+spec:
+  serviceName: hbase-single
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: hbase-single
+    spec:
+      hostNetwork: true
+      hostPID: true
+      dnsPolicy: ClusterFirstWithHostNet
+      containers:
+        - name: hbase-single
+          image: {{ $.Values.global.image.repository }}/{{ $.Chart.Name }}:{{ $.Chart.Version }}
+          imagePullPolicy: {{ $.Values.global.image.pullPolicy }}
+          command: ['/bin/bash','-c']
+          args: ['/start-single.sh']
+          volumeMounts:
+            - name: data
+              mountPath: /hbase
+            - name: config
+              mountPath: /usr/local/hbase/conf/hbase-site.xml
+              subPath: hbase-site.xml
+              readOnly: true
+            - name: config
+              mountPath: /start-single.sh
+              subPath: start-single.sh
+              readOnly: true
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/bash","/usr/local/hbase/bin/stop-hbase.sh"]
+      restartPolicy: Always
+      volumes:
+        - name: config
+          configMap:
+            name: hbase-single-config
+            defaultMode: 0744
+        - name: data
+          hostPath:
+            path: {{ .Values.singleConfig.localDir }}
+{{- end}}
