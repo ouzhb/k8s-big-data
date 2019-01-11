@@ -4,6 +4,10 @@ global:
     repository: rg-bigdata
     pullPolicy: IfNotPresent
 
-single: true
+single: false
 singleConfig:
   localDir: /kubedata/hbase
+
+clusterConfig:
+  hdfsDir: hdfs://hdfs-k8s/hbase
+  zookeeper: 172.24.33.41:2181,172.24.33.42:2181,172.24.33.43:2181

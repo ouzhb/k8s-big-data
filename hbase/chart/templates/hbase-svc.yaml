@@ -1,0 +1,70 @@
+---
+{{- if not .Values.single }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: hbase-regionserver
+  namespace: {{ $.Values.global.namespace }}
+  labels:
+    app: hbase-regionserver
+  annotations:
+    # TODO: Deprecated. Replace tolerate-unready-endpoints with
+    # v1.Service.PublishNotReadyAddresses.
+    service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
+spec:
+  ports:
+  - port: 16020
+    name: rs
+  - port: 16030
+    name: rsinfo
+  clusterIP: None
+  selector:
+    app: hbase-regionserver
+{{- end}}
+
+---
+{{- if not .Values.single }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: hbase-master
+  namespace: {{ $.Values.global.namespace }}
+  labels:
+    app: hbase-master
+  annotations:
+    # TODO: Deprecated. Replace tolerate-unready-endpoints with
+    # v1.Service.PublishNotReadyAddresses.
+    service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
+spec:
+  ports:
+  - port: 8080
+    name: restapi
+  - port: 9090
+    name: thriftapi
+  - port: 16000
+    name: master
+  - port: 16010
+    name: masterinfo
+  clusterIP: None
+  selector:
+    app: hbase-master
+{{- end}}
+
+---
+{{- if not .Values.single }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: hbase-webui
+  namespace: {{ $.Values.global.namespace }}
+  labels:
+    app: hbase-master
+spec:
+  type: NodePort
+  ports:
+  - port: 16010
+    targetPort: 16010
+    nodePort: 36010
+  selector:
+    app: hbase-master
+{{- end}}

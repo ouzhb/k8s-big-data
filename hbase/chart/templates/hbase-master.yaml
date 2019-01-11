@@ -1,0 +1,80 @@
+{{- if not .Values.single }}
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: hbase-master
+  namespace: {{ $.Values.global.namespace }}
+spec:
+  serviceName: hbase-master
+  replicas: 2
+  podManagementPolicy: Parallel
+  template:
+    metadata:
+      labels:
+        app: hbase-master
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions: [{ key: app,operator: In,values: [hbase-master] }]
+            topologyKey: "kubernetes.io/hostname"
+      containers:
+        - name: hbase-master
+          image: {{ $.Values.global.image.repository }}/{{ $.Chart.Name }}:{{ $.Chart.Version }}
+          imagePullPolicy: {{ $.Values.global.image.pullPolicy }}
+          env:
+          - name: HBASE_CONF_DIR
+            value: "/etc/hbase"
+          command: ['/start.sh']
+          args: ['master']
+          volumeMounts:
+            - name: config
+              mountPath: /etc/hbase/hbase-site.xml
+              subPath: hbase-site.xml
+              readOnly: true
+            - name: config
+              mountPath: /etc/hbase/hbase-env.sh
+              subPath: hbase-env.sh
+              readOnly: true
+            - name: hdfs-config
+              mountPath: /etc/hbase/hdfs-site.xml
+              subPath: hdfs-site.xml
+              readOnly: true
+            - name: hdfs-config
+              mountPath: /etc/hbase/core-site.xml
+              subPath: core-site.xml
+              readOnly: true
+            - name: config
+              mountPath: /start.sh
+              subPath: start.sh
+              readOnly: true
+          lifecycle:
+            preStop:
+              exec:
+                command: ["hbase-daemon.sh","--config $HBASE_CONF_DIR stop master"]
+# probe check
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 16010
+            initialDelaySeconds: 5
+            timeoutSeconds: 2
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 16010
+            initialDelaySeconds: 10
+            timeoutSeconds: 2
+
+      restartPolicy: Always
+      volumes:
+        - name: config
+          configMap:
+            name: hbase-config
+            defaultMode: 0744
+        - name: hdfs-config
+          configMap:
+            name: hdfs-config
+            defaultMode: 0744
+{{- end}}

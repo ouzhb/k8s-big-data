@@ -1,0 +1,80 @@
+{{- if not .Values.single }}
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: hbase-regionserver
+  namespace: {{ $.Values.global.namespace }}
+spec:
+  serviceName: hbase-regionserver
+  replicas: 3
+  podManagementPolicy: Parallel
+  template:
+    metadata:
+      labels:
+        app: hbase-regionserver
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions: [{ key: app,operator: In,values: [hbase-regionserver] }]
+            topologyKey: "kubernetes.io/hostname"
+      containers:
+        - name: hbase-regionserver
+          image: {{ $.Values.global.image.repository }}/{{ $.Chart.Name }}:{{ $.Chart.Version }}
+          imagePullPolicy: {{ $.Values.global.image.pullPolicy }}
+          env:
+          - name: HBASE_CONF_DIR
+            value: "/etc/hbase"
+          command: ['/start.sh']
+          args: ['regionserver']
+          volumeMounts:
+            - name: config
+              mountPath: /etc/hbase/hbase-site.xml
+              subPath: hbase-site.xml
+              readOnly: true
+            - name: config
+              mountPath: /etc/hbase/hbase-env.sh
+              subPath: hbase-env.sh
+              readOnly: true
+            - name: hdfs-config
+              mountPath: /etc/hbase/hdfs-site.xml
+              subPath: hdfs-site.xml
+              readOnly: true
+            - name: hdfs-config
+              mountPath: /etc/hbase/core-site.xml
+              subPath: core-site.xml
+              readOnly: true
+            - name: config
+              mountPath: /start.sh
+              subPath: start.sh
+              readOnly: true
+          lifecycle:
+            preStop:
+              exec:
+                command: ["hbase-daemon.sh","--config $HBASE_CONF_DIR stop regionserver"]
+# probe check
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 16030
+            initialDelaySeconds: 5
+            timeoutSeconds: 2
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 16030
+            initialDelaySeconds: 10
+            timeoutSeconds: 2
+
+      restartPolicy: Always
+      volumes:
+        - name: config
+          configMap:
+            name: hbase-config
+            defaultMode: 0744
+        - name: hdfs-config
+          configMap:
+            name: hdfs-config
+            defaultMode: 0744
+{{- end}}
